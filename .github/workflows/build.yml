@@ -1,0 +1,76 @@
+name: build-slate
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 私有库分支或 tag
+        required: false
+        default: main
+  repository_dispatch:
+    types: [build-slate]
+
+env:
+  SLATE_PRIVATE_REPO: ${{ vars.SLATE_PRIVATE_REPO || 'AISlate/Slate' }}
+  NODE_VERSION: '24.9.0'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Resolve ref
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            REF="${{ github.event.client_payload.ref }}"
+            [ -z "$REF" ] && REF="main"
+          else
+            REF="${{ inputs.ref }}"
+            [ -z "$REF" ] && REF="main"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
+
+      - name: Checkout private Slate
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SLATE_PRIVATE_REPO }}
+          token: ${{ secrets.SLATE_REPO_PAT }}
+          ref: ${{ steps.meta.outputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: native
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npm run generate-icons
+
+      - name: Build Tauri
+        run: npm run tauri:build
+
+      - name: Upload bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: slate-editor-bundle-${{ matrix.os }}-${{ steps.meta.outputs.ref }}
+          path: native/target/release/bundle/**
+          if-no-files-found: error
