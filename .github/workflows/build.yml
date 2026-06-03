@@ -36,6 +36,9 @@ jobs:
             [ -z "$REF" ] && REF="main"
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          # artifact 名称不允许 / 等字符（分支名 feat/xxx 需转义）
+          REF_SLUG=$(echo "$REF" | sed 's/[^[:alnum:._-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          echo "ref_slug=$REF_SLUG" >> "$GITHUB_OUTPUT"
           echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
 
       - name: Checkout private Slate
@@ -71,6 +74,6 @@ jobs:
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
-          name: slate-editor-bundle-${{ matrix.os }}-${{ steps.meta.outputs.ref }}
+          name: slate-editor-bundle-${{ matrix.os }}-${{ steps.meta.outputs.ref_slug }}
           path: native/target/release/bundle/**
           if-no-files-found: error
