@@ -36,8 +36,20 @@ jobs:
             [ -z "$REF" ] && REF="main"
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          # artifact 名称不允许 / 等字符（分支名 feat/xxx 需转义）
-          REF_SLUG=$(echo "$REF" | sed 's/[^[:alnum:._-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          # artifact 名称不允许 / 等字符；用 bash 替换，避免 Windows sed 兼容问题
+          REF_SLUG="$REF"
+          REF_SLUG="${REF_SLUG//\//-}"
+          REF_SLUG="${REF_SLUG//\\/-}"
+          REF_SLUG="${REF_SLUG//:/-}"
+          REF_SLUG="${REF_SLUG//\"/-}"
+          REF_SLUG="${REF_SLUG//</-}"
+          REF_SLUG="${REF_SLUG//>/-}"
+          REF_SLUG="${REF_SLUG//|/-}"
+          REF_SLUG="${REF_SLUG//\*/-}"
+          REF_SLUG="${REF_SLUG//\?/-}"
+          while [ "${REF_SLUG#*--}" != "$REF_SLUG" ]; do REF_SLUG="${REF_SLUG//--/-}"; done
+          REF_SLUG="${REF_SLUG#-}"
+          REF_SLUG="${REF_SLUG%-}"
           echo "ref_slug=$REF_SLUG" >> "$GITHUB_OUTPUT"
           echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
 
