@@ -166,3 +166,19 @@ jobs:
           prerelease: ${{ needs.prepare.outputs.prerelease }}
           generate_release_notes: true
           files: release-assets/*
+
+      # GitHub 会自动附加 Source code (zip/tar.gz)，本仓库无应用源码，发布后删除
+      - name: Remove auto-generated source archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ needs.prepare.outputs.release_tag }}"
+          gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[] | select(.name | startswith("Source code")) | .id' \
+            | while read -r asset_id; do
+                if [ -n "$asset_id" ]; then
+                  echo "Deleting release asset ${asset_id}"
+                  gh api --method DELETE \
+                    "/repos/${{ github.repository }}/releases/assets/${asset_id}"
+                fi
+              done
