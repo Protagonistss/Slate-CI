@@ -7,36 +7,51 @@ on:
         description: 私有库分支或 tag
         required: false
         default: main
+      release_tag:
+        description: 发布版本 tag（如 v0.0.1，留空则仅上传 Artifacts）
+        required: false
+        default: ''
+      prerelease:
+        description: 是否为预发布
+        required: false
+        type: boolean
+        default: false
   repository_dispatch:
     types: [build-slate]
+
+permissions:
+  contents: read
 
 env:
   SLATE_PRIVATE_REPO: ${{ vars.SLATE_PRIVATE_REPO || 'AISlate/Slate' }}
   NODE_VERSION: '24.9.0'
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.meta.outputs.ref }}
+      ref_slug: ${{ steps.meta.outputs.ref_slug }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      version: ${{ steps.meta.outputs.version }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
     steps:
-      - name: Resolve ref
+      - name: Resolve ref and release options
         id: meta
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             REF="${{ github.event.client_payload.ref }}"
-            [ -z "$REF" ] && REF="main"
+            RELEASE_TAG="${{ github.event.client_payload.release_tag }}"
+            PRERELEASE="${{ github.event.client_payload.prerelease }}"
           else
             REF="${{ inputs.ref }}"
-            [ -z "$REF" ] && REF="main"
+            RELEASE_TAG="${{ inputs.release_tag }}"
+            PRERELEASE="${{ inputs.prerelease }}"
           fi
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          # artifact 名称不允许 / 等字符；用 bash 替换，避免 Windows sed 兼容问题
+          [ -z "$REF" ] && REF="main"
+          [ -z "$PRERELEASE" ] && PRERELEASE="false"
+
           REF_SLUG="$REF"
           REF_SLUG="${REF_SLUG//\//-}"
           REF_SLUG="${REF_SLUG//\\/-}"
@@ -50,15 +65,33 @@ jobs:
           while [ "${REF_SLUG#*--}" != "$REF_SLUG" ]; do REF_SLUG="${REF_SLUG//--/-}"; done
           REF_SLUG="${REF_SLUG#-}"
           REF_SLUG="${REF_SLUG%-}"
-          echo "ref_slug=$REF_SLUG" >> "$GITHUB_OUTPUT"
-          echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
 
+          VERSION="${RELEASE_TAG#v}"
+
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "ref_slug=$REF_SLUG" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
+          [ -n "$RELEASE_TAG" ] && echo "Will publish release: ${RELEASE_TAG}"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
       - name: Checkout private Slate
         uses: actions/checkout@v4
         with:
           repository: ${{ env.SLATE_PRIVATE_REPO }}
           token: ${{ secrets.SLATE_REPO_PAT }}
-          ref: ${{ steps.meta.outputs.ref }}
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -86,6 +119,50 @@ jobs:
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
-          name: slate-editor-bundle-${{ matrix.os }}-${{ steps.meta.outputs.ref_slug }}
+          name: slate-editor-bundle-${{ matrix.os }}-${{ needs.prepare.outputs.ref_slug }}
           path: native/target/release/bundle/**
           if-no-files-found: error
+
+  release:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.release_tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: slate-editor-bundle-*
+          merge-multiple: true
+          path: bundles
+
+      - name: Prepare release assets
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          mkdir -p release-assets
+          find bundles -type f -iname '*.dmg' -print0 \
+            | while IFS= read -r -d '' f; do
+                cp "$f" "release-assets/Slate-${VERSION}.dmg"
+              done
+          find bundles -type f -path '*/nsis/*' -iname '*.exe' -print0 \
+            | while IFS= read -r -d '' f; do
+                cp "$f" "release-assets/Slate-${VERSION}-setup.exe"
+              done
+          echo "Release assets:"
+          ls -la release-assets/
+          if [ -z "$(ls -A release-assets)" ]; then
+            echo "No .dmg or NSIS .exe found in artifacts"
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          name: Slate ${{ needs.prepare.outputs.version }}
+          prerelease: ${{ needs.prepare.outputs.prerelease }}
+          generate_release_notes: true
+          files: release-assets/*

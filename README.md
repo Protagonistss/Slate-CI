@@ -11,7 +11,12 @@ Slate 是一个由 AI 驱动的现代化代码编辑器，通过深度集成的 
 
 ## 下载
 
-安装包由本仓库 [Actions](https://github.com/Protagonistss/Slate-CI/actions) 构建，在对应 Run 的 **Artifacts** 中下载。
+正式版本见 [Releases](https://github.com/Protagonistss/Slate-CI/releases)：
+
+- macOS：`Slate-x.y.z.dmg`
+- Windows：`Slate-x.y.z-setup.exe`
+
+CI 构建产物也可在 [Actions](https://github.com/Protagonistss/Slate-CI/actions) 对应 Run 的 **Artifacts** 中下载。
 
 
 ## License
