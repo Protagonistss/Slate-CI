@@ -8,7 +8,7 @@ on:
         required: false
         default: main
       release_tag:
-        description: 发布版本 tag（如 v0.0.1，留空则仅上传 Artifacts）
+        description: 发布版本 tag（如 v0.0.2，留空则仅上传 Artifacts）
         required: false
         default: ''
       prerelease:
