@@ -8,7 +8,7 @@ on:
         required: false
         default: main
       release_tag:
-        description: 发布版本 tag（如 v0.0.2，留空则仅上传 Artifacts）
+        description: 发布版本 tag（如 v0.0.3，留空则仅上传 Artifacts）
         required: false
         default: ''
       prerelease:
@@ -81,7 +81,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-22.04
+            platform: linux
 
     runs-on: ${{ matrix.os }}
 
@@ -92,6 +98,19 @@ jobs:
           repository: ${{ env.SLATE_PRIVATE_REPO }}
           token: ${{ secrets.SLATE_REPO_PAT }}
           ref: ${{ needs.prepare.outputs.ref }}
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev \
+            libglib2.0-dev
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -113,13 +132,21 @@ jobs:
       - name: Generate icons
         run: npm run generate-icons
 
-      - name: Build Tauri
+      - name: Generate installer assets
+        run: npm run generate-installer-assets
+
+      - name: Build Tauri (Windows / macOS)
+        if: matrix.platform != 'linux'
         run: npm run tauri:build
+
+      - name: Build Tauri (Linux — deb + AppImage only)
+        if: matrix.platform == 'linux'
+        run: npm run tauri:build -- --bundles deb,appimage
 
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
-          name: slate-editor-bundle-${{ matrix.os }}-${{ needs.prepare.outputs.ref_slug }}
+          name: slate-editor-bundle-${{ matrix.platform }}-${{ needs.prepare.outputs.ref_slug }}
           path: native/target/release/bundle/**
           if-no-files-found: error
 
@@ -143,18 +170,35 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           mkdir -p release-assets
+
+          # macOS DMG
           find bundles -type f -iname '*.dmg' -print0 \
             | while IFS= read -r -d '' f; do
                 cp "$f" "release-assets/Slate-${VERSION}.dmg"
               done
+
+          # Windows NSIS installer
           find bundles -type f -path '*/nsis/*' -iname '*.exe' -print0 \
             | while IFS= read -r -d '' f; do
                 cp "$f" "release-assets/Slate-${VERSION}-setup.exe"
               done
+
+          # Linux .deb
+          find bundles -type f -iname '*.deb' -print0 \
+            | while IFS= read -r -d '' f; do
+                cp "$f" "release-assets/Slate-${VERSION}-amd64.deb"
+              done
+
+          # Linux AppImage
+          find bundles -type f -iname '*.AppImage' -print0 \
+            | while IFS= read -r -d '' f; do
+                cp "$f" "release-assets/Slate-${VERSION}-x86_64.AppImage"
+              done
+
           echo "Release assets:"
           ls -la release-assets/
           if [ -z "$(ls -A release-assets)" ]; then
-            echo "No .dmg or NSIS .exe found in artifacts"
+            echo "No release assets found in artifacts"
             exit 1
           fi
 
