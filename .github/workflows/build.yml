@@ -36,47 +36,21 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       prerelease: ${{ steps.meta.outputs.prerelease }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Resolve ref and release options
         id: meta
         shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            REF="${{ github.event.client_payload.ref }}"
-            RELEASE_TAG="${{ github.event.client_payload.release_tag }}"
-            PRERELEASE="${{ github.event.client_payload.prerelease }}"
-          else
-            REF="${{ inputs.ref }}"
-            RELEASE_TAG="${{ inputs.release_tag }}"
-            PRERELEASE="${{ inputs.prerelease }}"
-          fi
-          [ -z "$REF" ] && REF="dev"
-          [ -z "$PRERELEASE" ] && PRERELEASE="false"
-
-          REF_SLUG="$REF"
-          REF_SLUG="${REF_SLUG//\//-}"
-          REF_SLUG="${REF_SLUG//\\/-}"
-          REF_SLUG="${REF_SLUG//:/-}"
-          REF_SLUG="${REF_SLUG//\"/-}"
-          REF_SLUG="${REF_SLUG//</-}"
-          REF_SLUG="${REF_SLUG//>/-}"
-          REF_SLUG="${REF_SLUG//|/-}"
-          REF_SLUG="${REF_SLUG//\*/-}"
-          REF_SLUG="${REF_SLUG//\?/-}"
-          while [ "${REF_SLUG#*--}" != "$REF_SLUG" ]; do REF_SLUG="${REF_SLUG//--/-}"; done
-          REF_SLUG="${REF_SLUG#-}"
-          REF_SLUG="${REF_SLUG%-}"
-
-          VERSION="${RELEASE_TAG#v}"
-
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          echo "ref_slug=$REF_SLUG" >> "$GITHUB_OUTPUT"
-          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
-          echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
-          if [ -n "$RELEASE_TAG" ]; then
-            echo "Will publish release: ${RELEASE_TAG}"
-          fi
+        env:
+          GH_EVENT_NAME: ${{ github.event_name }}
+          SLATE_REPO: ${{ env.SLATE_PRIVATE_REPO }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          CLIENT_REF: ${{ github.event.client_payload.ref }}
+          CLIENT_RELEASE_TAG: ${{ github.event.client_payload.release_tag }}
+          CLIENT_PRERELEASE: ${{ github.event.client_payload.prerelease }}
+        run: bash .github/scripts/resolve-build-meta.sh
 
   build:
     needs: prepare
@@ -94,60 +68,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout private Slate
-        uses: actions/checkout@v4
+      - name: Build Tauri
+        uses: ./.github/actions/build-tauri
         with:
-          repository: ${{ env.SLATE_PRIVATE_REPO }}
-          token: ${{ secrets.SLATE_REPO_PAT }}
           ref: ${{ needs.prepare.outputs.ref }}
-
-      - name: Install Linux system dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libssl-dev \
-            libgtk-3-dev \
-            libglib2.0-dev
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
+          platform: ${{ matrix.platform }}
+          slate-repo: ${{ env.SLATE_PRIVATE_REPO }}
+          repo-token: ${{ secrets.SLATE_REPO_PAT }}
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: native
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate icons
-        run: pnpm run generate-icons
-
-      - name: Generate installer assets
-        run: pnpm run generate-installer-assets
-
-      - name: Build Tauri (Windows / macOS)
-        if: matrix.platform != 'linux'
-        run: pnpm run tauri:build
-
-      - name: Build Tauri (Linux — deb + AppImage only)
-        if: matrix.platform == 'linux'
-        run: pnpm run tauri:build --bundles deb --bundles appimage
 
       - name: Upload bundles
         uses: actions/upload-artifact@v4
@@ -163,6 +91,8 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -174,39 +104,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          mkdir -p release-assets
-
-          # macOS DMG
-          find bundles -type f -iname '*.dmg' -print0 \
-            | while IFS= read -r -d '' f; do
-                cp "$f" "release-assets/Slate-${VERSION}.dmg"
-              done
-
-          # Windows NSIS installer
-          find bundles -type f -path '*/nsis/*' -iname '*.exe' -print0 \
-            | while IFS= read -r -d '' f; do
-                cp "$f" "release-assets/Slate-${VERSION}-setup.exe"
-              done
-
-          # Linux .deb
-          find bundles -type f -iname '*.deb' -print0 \
-            | while IFS= read -r -d '' f; do
-                cp "$f" "release-assets/Slate-${VERSION}-amd64.deb"
-              done
-
-          # Linux AppImage
-          find bundles -type f -iname '*.AppImage' -print0 \
-            | while IFS= read -r -d '' f; do
-                cp "$f" "release-assets/Slate-${VERSION}-x86_64.AppImage"
-              done
-
-          echo "Release assets:"
-          ls -la release-assets/
-          if [ -z "$(ls -A release-assets)" ]; then
-            echo "No release assets found in artifacts"
-            exit 1
-          fi
+        run: bash .github/scripts/prepare-release-assets.sh
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -217,18 +115,10 @@ jobs:
           generate_release_notes: true
           files: release-assets/*
 
-      # GitHub 会自动附加 Source code (zip/tar.gz)，本仓库无应用源码，发布后删除
       - name: Remove auto-generated source archives
+        shell: bash
         env:
+          TAG: ${{ needs.prepare.outputs.release_tag }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="${{ needs.prepare.outputs.release_tag }}"
-          gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
-            --jq '.assets[] | select(.name | startswith("Source code")) | .id' \
-            | while read -r asset_id; do
-                if [ -n "$asset_id" ]; then
-                  echo "Deleting release asset ${asset_id}"
-                  gh api --method DELETE \
-                    "/repos/${{ github.repository }}/releases/assets/${asset_id}"
-                fi
-              done
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash .github/scripts/remove-source-archives.sh
