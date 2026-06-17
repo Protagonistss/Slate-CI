@@ -147,7 +147,7 @@ jobs:
 
       - name: Build Tauri (Linux — deb + AppImage only)
         if: matrix.platform == 'linux'
-        run: pnpm run tauri:build -- --bundles deb,appimage
+        run: pnpm run tauri:build --bundles deb --bundles appimage
 
       - name: Upload bundles
         uses: actions/upload-artifact@v4
