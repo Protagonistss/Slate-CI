@@ -58,18 +58,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runs-on: windows-latest
+          - runner: windows-latest
             platform: windows
-          - runs-on: macos-latest
+          - runner: macos-latest
             platform: macos
-          - runs-on: ubuntu-22.04
+          - runner: ubuntu-22.04
             platform: linux
     uses: ./.github/workflows/build-tauri.yml
     with:
       ref: ${{ needs.prepare.outputs.ref }}
       ref_slug: ${{ needs.prepare.outputs.ref_slug }}
       platform: ${{ matrix.platform }}
-      runs-on: ${{ matrix.runs-on }}
+      runner: ${{ matrix.runner }}
       slate_repo: ${{ env.SLATE_PRIVATE_REPO }}
       node_version: ${{ env.NODE_VERSION }}
     secrets:

@@ -15,7 +15,7 @@ on:
         description: 目标平台 (windows | macos | linux)
         type: string
         required: true
-      runs-on:
+      runner:
         description: GitHub Actions runner 标签
         type: string
         required: true
@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ${{ inputs.runs-on }}
+    runs-on: ${{ inputs.runner }}
 
     steps:
       - name: Checkout private Slate
