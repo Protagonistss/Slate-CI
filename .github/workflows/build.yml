@@ -74,7 +74,9 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           echo "Building ${REF} from ${{ env.SLATE_PRIVATE_REPO }}"
-          [ -n "$RELEASE_TAG" ] && echo "Will publish release: ${RELEASE_TAG}"
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "Will publish release: ${RELEASE_TAG}"
+          fi
 
   build:
     needs: prepare
