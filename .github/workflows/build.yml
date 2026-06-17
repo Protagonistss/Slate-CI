@@ -70,8 +70,8 @@ jobs:
       ref_slug: ${{ needs.prepare.outputs.ref_slug }}
       platform: ${{ matrix.platform }}
       runner: ${{ matrix.runner }}
-      slate_repo: ${{ env.SLATE_PRIVATE_REPO }}
-      node_version: ${{ env.NODE_VERSION }}
+      slate_repo: ${{ vars.SLATE_PRIVATE_REPO || 'AISlate/Slate' }}
+      node_version: '24.9.0'
     secrets:
       repo_token: ${{ secrets.SLATE_REPO_PAT }}
 
