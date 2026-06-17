@@ -68,6 +68,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Build Tauri
         uses: ./.github/actions/build-tauri
         with:
