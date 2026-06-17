@@ -112,15 +112,15 @@ jobs:
             libgtk-3-dev \
             libglib2.0-dev
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
