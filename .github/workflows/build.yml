@@ -58,33 +58,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - runs-on: windows-latest
             platform: windows
-          - os: macos-latest
+          - runs-on: macos-latest
             platform: macos
-          - os: ubuntu-22.04
+          - runs-on: ubuntu-22.04
             platform: linux
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Tauri
-        uses: ./.github/actions/build-tauri
-        with:
-          ref: ${{ needs.prepare.outputs.ref }}
-          platform: ${{ matrix.platform }}
-          slate-repo: ${{ env.SLATE_PRIVATE_REPO }}
-          repo-token: ${{ secrets.SLATE_REPO_PAT }}
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Upload bundles
-        uses: actions/upload-artifact@v4
-        with:
-          name: slate-editor-bundle-${{ matrix.platform }}-${{ needs.prepare.outputs.ref_slug }}
-          path: native/target/release/bundle/**
-          if-no-files-found: error
+    uses: ./.github/workflows/build-tauri.yml
+    with:
+      ref: ${{ needs.prepare.outputs.ref }}
+      ref_slug: ${{ needs.prepare.outputs.ref_slug }}
+      platform: ${{ matrix.platform }}
+      runs-on: ${{ matrix.runs-on }}
+      slate_repo: ${{ env.SLATE_PRIVATE_REPO }}
+      node_version: ${{ env.NODE_VERSION }}
+    secrets:
+      repo_token: ${{ secrets.SLATE_REPO_PAT }}
 
   release:
     needs: [prepare, build]
