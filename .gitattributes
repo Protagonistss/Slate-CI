@@ -1,0 +1,25 @@
+# Cross-platform line endings: store LF in Git, checkout LF everywhere.
+* text=auto eol=lf
+
+# Windows-only scripts (keep CRLF if added later)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets — do not modify line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
