@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 私有库分支或 tag
+        description: 私有库分支或 tag（需含 pnpm-lock.yaml，当前为 dev）
         required: false
-        default: main
+        default: dev
       release_tag:
         description: 发布版本 tag（如 v0.0.3，留空则仅上传 Artifacts）
         required: false
@@ -49,7 +49,7 @@ jobs:
             RELEASE_TAG="${{ inputs.release_tag }}"
             PRERELEASE="${{ inputs.prerelease }}"
           fi
-          [ -z "$REF" ] && REF="main"
+          [ -z "$REF" ] && REF="dev"
           [ -z "$PRERELEASE" ] && PRERELEASE="false"
 
           REF_SLUG="$REF"
@@ -117,6 +117,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Enable Corepack
         run: corepack enable
