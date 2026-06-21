@@ -101,27 +101,11 @@ jobs:
         shell: bash
         run: pnpm run tauri:build
 
+      # 使用 Slate 仓库内脚本，避免 pnpm run tauri:build -- --target 错误传参
       - name: Build Tauri (macOS — Intel + Apple Silicon)
         if: inputs.platform == 'macos'
         shell: bash
-        run: |
-          pnpm run tauri:build -- --target x86_64-apple-darwin
-          pnpm run tauri:build -- --target aarch64-apple-darwin
-
-      - name: Verify macOS binaries
-        if: inputs.platform == 'macos'
-        shell: bash
-        run: |
-          X64_BIN="native/target/x86_64-apple-darwin/release/bundle/macos/Slate.app/Contents/MacOS/slate"
-          ARM_BIN="native/target/aarch64-apple-darwin/release/bundle/macos/Slate.app/Contents/MacOS/slate"
-          for bin in "$X64_BIN" "$ARM_BIN"; do
-            if [ ! -f "$bin" ]; then
-              echo "Expected app binary not found: $bin"
-              exit 1
-            fi
-          done
-          file "$X64_BIN" | grep -q 'x86_64' || { echo "Intel binary missing x86_64 arch"; exit 1; }
-          file "$ARM_BIN" | grep -q 'arm64' || { echo "Apple Silicon binary missing arm64 arch"; exit 1; }
+        run: bash native/scripts/build-macos-bundles.sh
 
       - name: Build Tauri (Linux — deb + AppImage only)
         if: inputs.platform == 'linux'
