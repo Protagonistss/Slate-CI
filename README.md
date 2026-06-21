@@ -37,12 +37,12 @@
 
 | 操作系统 | 架构支持 | 下载文件 |
 | :--- | :--- | :--- |
-| **macOS** | Apple Silicon (M1/M2/M3) | [`-aarch64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **macOS** | Intel | [`-x64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **Windows** | x64 | [`-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **Linux** | x64 | [`.deb` / `.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Apple Silicon (M1/M2/M3) | [`Slate-<version>-aarch64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Intel | [`Slate-<version>-x64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **Windows** | x64 | [`Slate-<version>-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **Linux** | x64 | [`Slate-<version>-amd64.deb`](https://github.com/Protagonistss/Slate-CI/releases/latest) <br> [`Slate-<version>-x86_64.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 
-> 💡 **提示**：对于自动构建但未正式发布的预览版本，您可以在 [GitHub Actions](https://github.com/Protagonistss/Slate-CI/actions) 最新的 Run 构建记录中，下载对应的 Artifacts 产物。
+> 💡 **提示**：对于自动构建但未正式发布的预览版本，您可以在 [GitHub Actions](https://github.com/Protagonistss/Slate-CI/actions) 最新的 Run 构建记录中，下载对应的 Artifacts 产物（名称格式为 `slate-editor-bundle-<platform>-<branch>`）。
 
 ---
 

@@ -37,12 +37,12 @@ We provide pre-compiled versions for all major platforms. Please visit the [Rele
 
 | Operating System | Architecture | Download File |
 | :--- | :--- | :--- |
-| **macOS** | Apple Silicon (M1/M2/M3) | [`-aarch64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **macOS** | Intel | [`-x64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **Windows** | x64 | [`-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
-| **Linux** | x64 | [`.deb` / `.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Apple Silicon (M1/M2/M3) | [`Slate-<version>-aarch64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Intel | [`Slate-<version>-x64.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **Windows** | x64 | [`Slate-<version>-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **Linux** | x64 | [`Slate-<version>-amd64.deb`](https://github.com/Protagonistss/Slate-CI/releases/latest) <br> [`Slate-<version>-x86_64.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 
-> 💡 **Tip**: For automatically built but unreleased preview versions, you can download the corresponding Artifacts from the latest Run in [GitHub Actions](https://github.com/Protagonistss/Slate-CI/actions).
+> 💡 **Tip**: For automatically built but unreleased preview versions, you can download the corresponding Artifacts from the latest Run in [GitHub Actions](https://github.com/Protagonistss/Slate-CI/actions) (archives named `slate-editor-bundle-<platform>-<branch>`).
 
 ---
 
