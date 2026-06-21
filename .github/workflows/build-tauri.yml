@@ -75,11 +75,14 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ inputs.platform == 'macos' && 'x86_64-apple-darwin,aarch64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: native
+          shared-key: ${{ inputs.platform == 'macos' && 'macos-dual-arch' || inputs.platform }}
 
       - name: Install dependencies
         shell: bash
@@ -93,33 +96,32 @@ jobs:
         shell: bash
         run: pnpm run generate-installer-assets
 
-      - name: Install macOS universal Rust targets
-        if: inputs.platform == 'macos'
-        shell: bash
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
-
       - name: Build Tauri (Windows)
         if: inputs.platform == 'windows'
         shell: bash
         run: pnpm run tauri:build
 
-      - name: Build Tauri (macOS — universal DMG)
-        if: inputs.platform == 'macos'
-        shell: bash
-        run: pnpm run tauri:build -- --target universal-apple-darwin
-
-      - name: Verify macOS universal binary
+      - name: Build Tauri (macOS — Intel + Apple Silicon)
         if: inputs.platform == 'macos'
         shell: bash
         run: |
-          APP_BIN="native/target/universal-apple-darwin/release/bundle/macos/Slate.app/Contents/MacOS/slate"
-          if [ ! -f "$APP_BIN" ]; then
-            echo "Expected universal app binary not found: $APP_BIN"
-            exit 1
-          fi
-          lipo -info "$APP_BIN"
-          lipo -info "$APP_BIN" | grep -q 'x86_64' || { echo "Missing x86_64 slice"; exit 1; }
-          lipo -info "$APP_BIN" | grep -q 'arm64' || { echo "Missing arm64 slice"; exit 1; }
+          pnpm run tauri:build -- --target x86_64-apple-darwin
+          pnpm run tauri:build -- --target aarch64-apple-darwin
+
+      - name: Verify macOS binaries
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          X64_BIN="native/target/x86_64-apple-darwin/release/bundle/macos/Slate.app/Contents/MacOS/slate"
+          ARM_BIN="native/target/aarch64-apple-darwin/release/bundle/macos/Slate.app/Contents/MacOS/slate"
+          for bin in "$X64_BIN" "$ARM_BIN"; do
+            if [ ! -f "$bin" ]; then
+              echo "Expected app binary not found: $bin"
+              exit 1
+            fi
+          done
+          file "$X64_BIN" | grep -q 'x86_64' || { echo "Intel binary missing x86_64 arch"; exit 1; }
+          file "$ARM_BIN" | grep -q 'arm64' || { echo "Apple Silicon binary missing arm64 arch"; exit 1; }
 
       - name: Build Tauri (Linux — deb + AppImage only)
         if: inputs.platform == 'linux'
@@ -131,14 +133,19 @@ jobs:
         shell: bash
         run: |
           if [ "${{ inputs.platform }}" = "macos" ]; then
-            echo "path=native/target/universal-apple-darwin/release/bundle/**" >> "$GITHUB_OUTPUT"
+            {
+              echo "paths<<EOF"
+              echo "native/target/x86_64-apple-darwin/release/bundle/**"
+              echo "native/target/aarch64-apple-darwin/release/bundle/**"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "path=native/target/release/bundle/**" >> "$GITHUB_OUTPUT"
+            echo "paths=native/target/release/bundle/**" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
           name: slate-editor-bundle-${{ inputs.platform }}-${{ inputs.ref_slug }}
-          path: ${{ steps.bundle.outputs.path }}
+          path: ${{ steps.bundle.outputs.paths }}
           if-no-files-found: error
