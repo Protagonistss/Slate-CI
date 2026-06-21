@@ -37,7 +37,7 @@
 
 | 操作系统 | 架构支持 | 下载文件 |
 | :--- | :--- | :--- |
-| **macOS** | Apple Silicon (M1/M2/M3) / Intel | [`.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Universal（Apple Silicon + Intel） | [`-universal.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 | **Windows** | x64 | [`-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 | **Linux** | x64 | [`.deb` / `.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 

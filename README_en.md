@@ -37,7 +37,7 @@ We provide pre-compiled versions for all major platforms. Please visit the [Rele
 
 | Operating System | Architecture | Download File |
 | :--- | :--- | :--- |
-| **macOS** | Apple Silicon (M1/M2/M3) / Intel | [`.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
+| **macOS** | Universal (Apple Silicon + Intel) | [`-universal.dmg`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 | **Windows** | x64 | [`-setup.exe`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 | **Linux** | x64 | [`.deb` / `.AppImage`](https://github.com/Protagonistss/Slate-CI/releases/latest) |
 

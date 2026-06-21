@@ -9,10 +9,10 @@ OUTPUT_DIR="${OUTPUT_DIR:-release-assets}"
 
 mkdir -p "$OUTPUT_DIR"
 
-# macOS DMG
+# macOS Universal DMG（Intel + Apple Silicon）
 find "$BUNDLES_DIR" -type f -iname '*.dmg' -print0 \
   | while IFS= read -r -d '' f; do
-      cp "$f" "${OUTPUT_DIR}/Slate-${VERSION}.dmg"
+      cp "$f" "${OUTPUT_DIR}/Slate-${VERSION}-universal.dmg"
     done
 
 # Windows NSIS installer

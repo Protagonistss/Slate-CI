@@ -60,10 +60,13 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
+            bundle_path: native/target/release/bundle/**
           - os: macos-latest
             platform: macos
+            bundle_path: native/target/universal-apple-darwin/release/bundle/**
           - os: ubuntu-22.04
             platform: linux
+            bundle_path: native/target/release/bundle/**
 
     runs-on: ${{ matrix.os }}
 
@@ -81,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: slate-editor-bundle-${{ matrix.platform }}-${{ needs.prepare.outputs.ref_slug }}
-          path: native/target/release/bundle/**
+          path: ${{ matrix.bundle_path }}
           if-no-files-found: error
 
   release:
