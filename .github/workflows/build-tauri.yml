@@ -32,6 +32,12 @@ on:
       repo_token:
         description: 访问私有库的 PAT
         required: true
+      tauri_signing_private_key:
+        description: Tauri updater 私钥内容
+        required: false
+      tauri_signing_private_key_password:
+        description: Tauri updater 私钥密码
+        required: false
 
 permissions:
   contents: read
@@ -99,17 +105,26 @@ jobs:
       - name: Build Tauri (Windows)
         if: inputs.platform == 'windows'
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.tauri_signing_private_key }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.tauri_signing_private_key_password }}
         run: pnpm run tauri:build
 
       # 使用 Slate 仓库内脚本，避免 pnpm run tauri:build -- --target 错误传参
       - name: Build Tauri (macOS — Intel + Apple Silicon)
         if: inputs.platform == 'macos'
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.tauri_signing_private_key }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.tauri_signing_private_key_password }}
         run: bash native/scripts/build-macos-bundles.sh
 
       - name: Build Tauri (Linux — deb + AppImage only)
         if: inputs.platform == 'linux'
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.tauri_signing_private_key }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.tauri_signing_private_key_password }}
         run: pnpm run tauri:build --bundles deb --bundles appimage
 
       - name: Resolve bundle upload path

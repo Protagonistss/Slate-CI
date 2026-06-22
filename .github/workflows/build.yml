@@ -74,6 +74,8 @@ jobs:
       node_version: '24.9.0'
     secrets:
       repo_token: ${{ secrets.SLATE_REPO_PAT }}
+      tauri_signing_private_key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      tauri_signing_private_key_password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
   release:
     needs: [prepare, build]
@@ -95,6 +97,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: bash .github/scripts/prepare-release-assets.sh
 
       - name: Publish GitHub Release
