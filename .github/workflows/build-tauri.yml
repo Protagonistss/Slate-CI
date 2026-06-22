@@ -102,6 +102,10 @@ jobs:
         shell: bash
         run: pnpm run generate-installer-assets
 
+      - name: Verify CLI installer assets
+        shell: bash
+        run: pnpm run verify-cli-artifacts
+
       - name: Build Tauri (Windows)
         if: inputs.platform == 'windows'
         shell: bash

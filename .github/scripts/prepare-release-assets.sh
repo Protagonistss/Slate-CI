@@ -100,6 +100,16 @@ find "$BUNDLES_DIR" -type f -iname '*.AppImage.tar.gz' ! -iname '*.sig' -print0 
       fi
     done
 
+# CLI 启动器（macOS / AppImage 旁路分发）
+CLI_MACOS_LAUNCHER="${CLI_MACOS_LAUNCHER:-native/installer/macos/slate}"
+CLI_APPIMAGE_LAUNCHER="${CLI_APPIMAGE_LAUNCHER:-native/installer/linux/slate-appimage}"
+if [ -f "$CLI_MACOS_LAUNCHER" ]; then
+  install -m 755 "$CLI_MACOS_LAUNCHER" "${OUTPUT_DIR}/slate-macos"
+fi
+if [ -f "$CLI_APPIMAGE_LAUNCHER" ]; then
+  install -m 755 "$CLI_APPIMAGE_LAUNCHER" "${OUTPUT_DIR}/slate"
+fi
+
 echo "Release assets:"
 ls -la "$OUTPUT_DIR/"
 if [ -z "$(ls -A "$OUTPUT_DIR")" ]; then
