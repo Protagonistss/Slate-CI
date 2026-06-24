@@ -11,8 +11,8 @@ mkdir -p "${TMP_DIR}/bundles/native/target/aarch64-apple-darwin/release/bundle/m
 echo "dummy" > "${TMP_DIR}/bundles/native/target/aarch64-apple-darwin/release/bundle/macos/Slate.app.tar.gz"
 echo "sig-aarch64" > "${TMP_DIR}/bundles/native/target/aarch64-apple-darwin/release/bundle/macos/Slate.app.tar.gz.sig"
 
-VERSION=0.0.16 \
-RELEASE_TAG=v0.0.16 \
+VERSION=0.0.17 \
+RELEASE_TAG=v0.0.17 \
 BUNDLES_DIR="${TMP_DIR}/bundles" \
 OUTPUT_DIR="${TMP_DIR}/release-assets" \
 bash "${ROOT_DIR}/.github/scripts/prepare-release-assets.sh"
@@ -23,7 +23,7 @@ import pathlib
 import sys
 
 manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-assert manifest["version"] == "0.0.16"
+assert manifest["version"] == "0.0.17"
 assert "darwin-aarch64" in manifest["platforms"]
 assert manifest["platforms"]["darwin-aarch64"]["signature"] == "sig-aarch64"
 print("updater manifest smoke test passed")
