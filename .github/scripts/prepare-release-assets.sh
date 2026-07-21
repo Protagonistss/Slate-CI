@@ -58,22 +58,16 @@ while IFS= read -r -d '' archive; do
   if [ -f "$sig_file" ]; then
     copy_updater_artifact "$sig_file" "${target_name}.sig"
   fi
-done < <(find "$BUNDLES_DIR" -type f \( -iname '*.app.tar.gz' -o -iname '*.tar.gz' \) ! -iname '*.sig' -print0)
+# 仅收集 macOS updater 包，避免误匹配 deb 内的 data.tar.gz 等
+done < <(find "$BUNDLES_DIR" -type f -iname '*.app.tar.gz' ! -iname '*.sig' -print0)
 
-# Windows NSIS installer
+# Windows NSIS installer + updater 签名（Tauri v2 直接签 setup.exe，无 .nsis.zip 包装）
 find "$BUNDLES_DIR" -type f -path '*/nsis/*' -iname '*.exe' -print0 \
   | while IFS= read -r -d '' f; do
       cp "$f" "${OUTPUT_DIR}/Slate-${VERSION}-setup.exe"
-    done
-
-# Windows updater 包
-find "$BUNDLES_DIR" -type f -path '*/nsis/*' -iname '*.nsis.zip' ! -iname '*.sig' -print0 \
-  | while IFS= read -r -d '' archive; do
-      target_name="Slate-${VERSION}-update-windows-x86_64.nsis.zip"
-      copy_updater_artifact "$archive" "$target_name"
-      sig_file="${archive}.sig"
+      sig_file="${f}.sig"
       if [ -f "$sig_file" ]; then
-        copy_updater_artifact "$sig_file" "${target_name}.sig"
+        copy_updater_artifact "$sig_file" "Slate-${VERSION}-setup.exe.sig"
       fi
     done
 
@@ -83,20 +77,13 @@ find "$BUNDLES_DIR" -type f -iname '*.deb' -print0 \
       cp "$f" "${OUTPUT_DIR}/Slate-${VERSION}-amd64.deb"
     done
 
-# Linux AppImage
+# Linux AppImage + updater 签名（Tauri v2 直接签 .AppImage，无 .tar.gz 包装）
 find "$BUNDLES_DIR" -type f -iname '*.AppImage' ! -iname '*.tar.gz' -print0 \
   | while IFS= read -r -d '' f; do
       cp "$f" "${OUTPUT_DIR}/Slate-${VERSION}-x86_64.AppImage"
-    done
-
-# Linux AppImage updater 包
-find "$BUNDLES_DIR" -type f -iname '*.AppImage.tar.gz' ! -iname '*.sig' -print0 \
-  | while IFS= read -r -d '' archive; do
-      target_name="Slate-${VERSION}-update-linux-x86_64.AppImage.tar.gz"
-      copy_updater_artifact "$archive" "$target_name"
-      sig_file="${archive}.sig"
+      sig_file="${f}.sig"
       if [ -f "$sig_file" ]; then
-        copy_updater_artifact "$sig_file" "${target_name}.sig"
+        copy_updater_artifact "$sig_file" "Slate-${VERSION}-x86_64.AppImage.sig"
       fi
     done
 
@@ -134,8 +121,9 @@ platforms = {}
 mapping = {
     "Slate-{}-update-darwin-aarch64.tar.gz": "darwin-aarch64",
     "Slate-{}-update-darwin-x86_64.tar.gz": "darwin-x86_64",
-    "Slate-{}-update-windows-x86_64.nsis.zip": "windows-x86_64",
-    "Slate-{}-update-linux-x86_64.AppImage.tar.gz": "linux-x86_64",
+    # Windows/Linux：Tauri v2 对安装包本体签名，不再产出 -update-* 包装产物
+    "Slate-{}-setup.exe": "windows-x86_64",
+    "Slate-{}-x86_64.AppImage": "linux-x86_64",
 }
 
 for pattern, platform in mapping.items():
